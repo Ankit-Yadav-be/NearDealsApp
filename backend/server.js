@@ -1,0 +1,30 @@
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import connectDB from "./src/config/db.js";
+import userRoutes from "./src/routes/userRoutes.js"
+import businessRoutes from "./src/routes/businessRoutes.js"
+import reviewRoutes from "./src/routes/reviewRoutes.js"
+import offerRoutes from "./src/routes/offerRoutes.js"
+import compression from "compression";
+dotenv.config();
+connectDB();
+
+const app = express();
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(compression());
+
+// Sample route
+app.get("/", (req, res) => {
+  res.send("🚀 LocalConnect API is running...");
+});
+
+app.use("/api/users", userRoutes);
+app.use("/api/business", businessRoutes);
+app.use("/api/review",reviewRoutes)
+app.use("/api/offer",offerRoutes)
+
+export default app;
