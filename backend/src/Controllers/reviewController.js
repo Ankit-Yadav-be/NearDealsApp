@@ -21,7 +21,9 @@ export const createReview = async (req, res) => {
     });
 
     if (alreadyReviewed) {
-      return res.status(400).json({ message: "You already reviewed this business" });
+      return res
+        .status(400)
+        .json({ message: "You already reviewed this business" });
     }
 
     const review = await Review.create({
@@ -51,8 +53,10 @@ export const createReview = async (req, res) => {
 export const getReviews = async (req, res) => {
   try {
     const businessId = req.params.businessId;
-    const reviews = await Review.find({ business: businessId })
-      .populate("user", "name email");
+    const reviews = await Review.find({ business: businessId }).populate(
+      "user",
+      "name email"
+    );
 
     res.json(reviews);
   } catch (error) {
@@ -71,7 +75,9 @@ export const updateReview = async (req, res) => {
     if (!review) return res.status(404).json({ message: "Review not found" });
 
     if (review.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to update this review" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this review" });
     }
 
     review.rating = rating ?? review.rating;
@@ -106,7 +112,9 @@ export const deleteReview = async (req, res) => {
       review.user.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to delete this review" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this review" });
     }
 
     await review.deleteOne();

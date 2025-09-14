@@ -7,10 +7,20 @@ import User from "../models/User.js";
 export const createBusiness = async (req, res) => {
   try {
     if (req.user.role !== "businessOwner" && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Only business owners can create businesses" });
+      return res
+        .status(403)
+        .json({ message: "Only business owners can create businesses" });
     }
 
-    const { name, description, category, images, contact, location, openingHours } = req.body;
+    const {
+      name,
+      description,
+      category,
+      images,
+      contact,
+      location,
+      openingHours,
+    } = req.body;
 
     const business = await Business.create({
       owner: req.user._id,
@@ -46,8 +56,12 @@ export const getBusinesses = async (req, res) => {
 // @access Public
 export const getBusinessById = async (req, res) => {
   try {
-    const business = await Business.findById(req.params.id).populate("owner", "name email");
-    if (!business) return res.status(404).json({ message: "Business not found" });
+    const business = await Business.findById(req.params.id).populate(
+      "owner",
+      "name email"
+    );
+    if (!business)
+      return res.status(404).json({ message: "Business not found" });
 
     res.json(business);
   } catch (error) {
@@ -61,7 +75,7 @@ export const getBusinessById = async (req, res) => {
 export const getNearbyBusinesses = async (req, res) => {
   try {
     const { lng, lat, radius } = req.query;
-    console.log(lng,lat,radius)
+    console.log(lng, lat, radius);
     if (!lng || !lat) {
       return res.status(400).json({ message: "Please provide lng and lat" });
     }
@@ -69,7 +83,7 @@ export const getNearbyBusinesses = async (req, res) => {
     const longitude = parseFloat(lng);
     const latitude = parseFloat(lat);
     const distance = radius ? parseFloat(radius) : 5; // default 5 km
-    console.log(longitude,latitude,distance);
+    console.log(longitude, latitude, distance);
     const businesses = await Business.find({
       location: {
         $geoWithin: {
@@ -84,7 +98,6 @@ export const getNearbyBusinesses = async (req, res) => {
   }
 };
 
-
 // @desc Update business
 // @route PUT /api/business/:id
 // @access Private (owner or admin)
@@ -94,13 +107,16 @@ export const updateBusiness = async (req, res) => {
 
     // Owner check ke liye pehle doc fetch karna hoga
     const existing = await Business.findById(id);
-    if (!existing) return res.status(404).json({ message: "Business not found" });
+    if (!existing)
+      return res.status(404).json({ message: "Business not found" });
 
     if (
       existing.owner.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to update this business" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this business" });
     }
 
     // Update karo
@@ -116,7 +132,6 @@ export const updateBusiness = async (req, res) => {
   }
 };
 
-
 // @desc Delete business
 // @route DELETE /api/business/:id
 // @access Private (owner or admin)
@@ -124,13 +139,16 @@ export const deleteBusiness = async (req, res) => {
   try {
     const business = await Business.findById(req.params.id);
 
-    if (!business) return res.status(404).json({ message: "Business not found" });
+    if (!business)
+      return res.status(404).json({ message: "Business not found" });
 
     if (
       business.owner.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to delete this business" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this business" });
     }
 
     await business.deleteOne();

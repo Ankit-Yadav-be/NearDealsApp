@@ -31,7 +31,7 @@ const CustomerTabLayout = () => {
         }}
       />
 
-         {/* Favourites Tab */}
+      {/* Favourites Tab */}
       <Tabs.Screen
         name="favourites"
         options={{

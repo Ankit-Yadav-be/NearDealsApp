@@ -5,16 +5,16 @@ import {
   getBusinessById,
   getNearbyBusinesses,
   updateBusiness,
-  deleteBusiness
+  deleteBusiness,
 } from "../Controllers/businessController.js";
 import protect from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/", protect, createBusiness); // Create business
-router.get("/", getBusinesses);            // Get all businesses
+router.get("/", getBusinesses); // Get all businesses
 router.get("/nearby", getNearbyBusinesses); // Get nearby
-router.get("/:id", getBusinessById);       // Get single business
+router.get("/:id", getBusinessById); // Get single business
 router.put("/:id", protect, updateBusiness); // Update
 router.delete("/:id", protect, deleteBusiness); // Delete
 
