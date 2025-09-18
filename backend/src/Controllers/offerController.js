@@ -7,7 +7,8 @@ import Business from "../models/Bussiness.js";
 export const createOffer = async (req, res) => {
   try {
     const { businessId } = req.params;
-    const { title, description, discountPercent, validFrom, validTo } = req.body;
+    const { title, description, discountPercent, validFrom, validTo } =
+      req.body;
 
     const business = await Business.findById(businessId);
     if (!business) {
@@ -19,7 +20,9 @@ export const createOffer = async (req, res) => {
       business.owner.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to create offer" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to create offer" });
     }
 
     const offer = new Offer({
@@ -32,7 +35,14 @@ export const createOffer = async (req, res) => {
     });
 
     await offer.save();
-    res.status(201).json(offer);
+
+    // ✅ populate business details
+    const populatedOffer = await Offer.findById(offer._id).populate(
+      "business",
+      "name category images contact location rating averageRating numReviews"
+    );
+
+    res.status(201).json(populatedOffer);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -51,7 +61,12 @@ export const getBusinessOffers = async (req, res) => {
       query.isActive = active === "true";
     }
 
-    const offers = await Offer.find(query);
+    // ✅ populate business details
+    const offers = await Offer.find(query).populate(
+      "business",
+      "name category images contact location rating averageRating numReviews"
+    );
+
     res.status(200).json(offers);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -74,14 +89,19 @@ export const updateOffer = async (req, res) => {
       offer.business.owner.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to update offer" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update offer" });
     }
 
-    // ✅ direct update with findByIdAndUpdate
+    // ✅ update and populate again
     const updatedOffer = await Offer.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body }, // jo fields update karni hain
-      { new: true, runValidators: true } // updated doc return karega aur validations run honge
+      { $set: req.body },
+      { new: true, runValidators: true }
+    ).populate(
+      "business",
+      "name category images contact location rating averageRating numReviews"
     );
 
     res.status(200).json(updatedOffer);
@@ -89,7 +109,6 @@ export const updateOffer = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // @desc    Delete an offer
 // @route   DELETE /api/offers/:id
@@ -106,7 +125,9 @@ export const deleteOffer = async (req, res) => {
       offer.business.owner.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to delete offer" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete offer" });
     }
 
     await offer.deleteOne();

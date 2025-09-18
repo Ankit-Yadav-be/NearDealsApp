@@ -19,19 +19,23 @@ import API from "../../api/axiosInstance";
 const CustomerHome = () => {
   const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [search, setSearch] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+
   const router = useRouter();
 
   useEffect(() => {
     fetchAllBusinesses();
+    fetchCategories();
   }, []);
 
   // ✅ Distance calculator
   const getDistanceFromLatLon = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; 
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -76,7 +80,9 @@ const CustomerHome = () => {
           text1: "Location permission denied",
         });
 
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
       const { latitude, longitude } = location.coords;
       setUserCoords({ latitude, longitude });
 
@@ -95,8 +101,22 @@ const CustomerHome = () => {
     }
   };
 
-  const filteredBusinesses = businesses.filter((b) =>
-    b.name.toLowerCase().includes(search.toLowerCase())
+  // ✅ Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const res = await API.get("/category");
+      // Add "All" as first option
+      setCategories([{ _id: "all", name: "All", icon: null }, ...res.data]);
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Failed to load categories" });
+    }
+  };
+
+  // ✅ Filter businesses by search and selected category
+  const filteredBusinesses = businesses.filter(
+    (b) =>
+      b.name.toLowerCase().includes(search.toLowerCase()) &&
+      (selectedCategory === "All" ? true : b.category === selectedCategory)
   );
 
   const renderBusiness = ({ item }) => {
@@ -104,11 +124,20 @@ const CustomerHome = () => {
 
     if (locationEnabled && userCoords && item.location?.coordinates) {
       const [lng, lat] = item.location.coordinates;
-      distanceText = `📍 ${getDistanceFromLatLon(userCoords.latitude, userCoords.longitude, lat, lng)} km away`;
+      distanceText = `📍 ${getDistanceFromLatLon(
+        userCoords.latitude,
+        userCoords.longitude,
+        lat,
+        lng
+      )} km away`;
     }
 
     const fadeAnim = new Animated.Value(0);
-    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
 
     return (
       <Animated.View style={{ opacity: fadeAnim }}>
@@ -129,8 +158,9 @@ const CustomerHome = () => {
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.category}>{item.category}</Text>
             <Text style={styles.distance}>{distanceText}</Text>
-            <TouchableOpacity style={styles.button}
-             onPress={() => router.push(`/(customer)/${item._id}`)}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push(`/(customer)/${item._id}`)}
             >
               <Text style={styles.buttonText}>View Details</Text>
             </TouchableOpacity>
@@ -157,7 +187,10 @@ const CustomerHome = () => {
           </View>
 
           <TouchableOpacity
-            style={[styles.locationBtn, locationEnabled && { backgroundColor: "#059669" }]}
+            style={[
+              styles.locationBtn,
+              locationEnabled && { backgroundColor: "#059669" },
+            ]}
             onPress={getLocationAndFetch}
             disabled={locationLoading}
           >
@@ -174,6 +207,50 @@ const CustomerHome = () => {
         </View>
       </View>
 
+      {/* ✅ Category Filter */}
+      <View style={{ paddingVertical: 12 }}>
+        <FlatList
+          data={categories}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => {
+            const isActive = selectedCategory === item.name;
+            return (
+              <TouchableOpacity
+                style={[styles.categoryBtn, isActive && styles.categoryBtnActive]}
+                onPress={() => setSelectedCategory(item.name)}
+                activeOpacity={0.5}
+              >
+                {/* ✅ Rounded Icon */}
+                <View
+                  style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}
+                >
+                  {item.icon ? (
+                    <Image
+                      source={{ uri: item.icon }}
+                      style={styles.categoryIcon}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons
+                      name={item.name === "All" ? "apps-outline" : "pricetag-outline"}
+                      size={20}
+                      color={isActive ? "white" : "#6B7280"}
+                    />
+                  )}
+                </View>
+
+                {/* ✅ Category Text */}
+                <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
+
       {/* Section */}
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionTitle}>
@@ -185,7 +262,9 @@ const CustomerHome = () => {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={{ marginTop: 10, color: "#374151" }}>
-            {locationEnabled ? "Fetching nearby businesses..." : "Loading businesses..."}
+            {locationEnabled
+              ? "Fetching nearby businesses..."
+              : "Loading businesses..."}
           </Text>
         </View>
       ) : filteredBusinesses.length === 0 ? (
@@ -226,7 +305,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-  topbarTitle: { color: "white", fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  topbarTitle: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
   searchRow: { flexDirection: "row", alignItems: "center" },
   searchWrapper: {
     flex: 1,
@@ -236,7 +320,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
   },
-  searchInput: { flex: 1, height: 38, marginLeft: 8, fontSize: 14, color: "#111827" },
+  searchInput: {
+    flex: 1,
+    height: 38,
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#111827",
+  },
   locationBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -245,6 +335,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 10,
+  },
+
+  // ✅ Category Styles
+  categoryBtn: {
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+  categoryBtnActive: {
+    transform: [{ scale: 1.05 }],
+  },
+  iconWrapper: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconWrapperActive: {
+    backgroundColor: "#3e72e1ff",
+    shadowOpacity: 0.15,
+    elevation: 4,
+  },
+  categoryIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  categoryText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  categoryTextActive: {
+    color: "#2563EB",
+    fontWeight: "700",
   },
 
   sectionHeading: { paddingHorizontal: 16, paddingVertical: 8 },
@@ -267,7 +398,13 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: "700", color: "#111827" },
   category: { fontSize: 14, color: "#6B7280", marginVertical: 4 },
   distance: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
-  button: { marginTop: 6, backgroundColor: "#2563EB", paddingVertical: 6, borderRadius: 8, alignItems: "center" },
+  button: {
+    marginTop: 6,
+    backgroundColor: "#2563EB",
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: "center",
+  },
   buttonText: { color: "white", fontWeight: "600" },
 
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
