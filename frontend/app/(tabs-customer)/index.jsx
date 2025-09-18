@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import API from "../../api/axiosInstance";
+import AllOffersCarousel from "../../components/customerofferList/AllOffersCarousel";
 
 const CustomerHome = () => {
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,19 @@ const CustomerHome = () => {
   const [userCoords, setUserCoords] = useState(null);
 
   const router = useRouter();
+
+  // ✅ Scroll animation
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [100, 60], // Shrinks height
+    extrapolate: "clamp",
+  });
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0.9], // Slight fade
+    extrapolate: "clamp",
+  });
 
   useEffect(() => {
     fetchAllBusinesses();
@@ -41,8 +55,8 @@ const CustomerHome = () => {
     const a =
       Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return (R * c).toFixed(1);
   };
@@ -105,14 +119,13 @@ const CustomerHome = () => {
   const fetchCategories = async () => {
     try {
       const res = await API.get("/category");
-      // Add "All" as first option
       setCategories([{ _id: "all", name: "All", icon: null }, ...res.data]);
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to load categories" });
     }
   };
 
-  // ✅ Filter businesses by search and selected category
+  // ✅ Filter businesses
   const filteredBusinesses = businesses.filter(
     (b) =>
       b.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -172,8 +185,8 @@ const CustomerHome = () => {
 
   return (
     <View style={styles.container}>
-      {/* Topbar */}
-      <View style={styles.topbar}>
+      {/* ✅ Animated Topbar */}
+      <Animated.View style={[styles.topbar, { height: headerHeight, opacity: headerOpacity }]}>
         <Text style={styles.topbarTitle}>Explore Businesses</Text>
         <View style={styles.searchRow}>
           <View style={styles.searchWrapper}>
@@ -187,10 +200,7 @@ const CustomerHome = () => {
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.locationBtn,
-              locationEnabled && { backgroundColor: "#059669" },
-            ]}
+            style={[styles.locationBtn, locationEnabled && { backgroundColor: "#059669" }]}
             onPress={getLocationAndFetch}
             disabled={locationLoading}
           >
@@ -205,66 +215,14 @@ const CustomerHome = () => {
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
 
-      {/* ✅ Category Filter */}
-      <View style={{ paddingVertical: 12 }}>
-        <FlatList
-          data={categories}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => {
-            const isActive = selectedCategory === item.name;
-            return (
-              <TouchableOpacity
-                style={[styles.categoryBtn, isActive && styles.categoryBtnActive]}
-                onPress={() => setSelectedCategory(item.name)}
-                activeOpacity={0.5}
-              >
-                {/* ✅ Rounded Icon */}
-                <View
-                  style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}
-                >
-                  {item.icon ? (
-                    <Image
-                      source={{ uri: item.icon }}
-                      style={styles.categoryIcon}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Ionicons
-                      name={item.name === "All" ? "apps-outline" : "pricetag-outline"}
-                      size={20}
-                      color={isActive ? "white" : "#6B7280"}
-                    />
-                  )}
-                </View>
-
-                {/* ✅ Category Text */}
-                <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </View>
-
-      {/* Section */}
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>
-          {locationEnabled ? "Nearby Businesses" : "All Businesses"}
-        </Text>
-      </View>
-
+      {/* ✅ Scrollable Content */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={{ marginTop: 10, color: "#374151" }}>
-            {locationEnabled
-              ? "Fetching nearby businesses..."
-              : "Loading businesses..."}
+            {locationEnabled ? "Fetching nearby businesses..." : "Loading businesses..."}
           </Text>
         </View>
       ) : filteredBusinesses.length === 0 ? (
@@ -275,11 +233,68 @@ const CustomerHome = () => {
           </Text>
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={filteredBusinesses}
           renderItem={renderBusiness}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: 14, paddingBottom: 80 }}
+          contentContainerStyle={{ paddingBottom: 80 }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          ListHeaderComponent={
+            <>
+              <AllOffersCarousel />
+              {/* ✅ Category Filter */}
+              <View style={{ paddingVertical: 12 }}>
+                <FlatList
+                  data={categories}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item) => item._id}
+                  renderItem={({ item }) => {
+                    const isActive = selectedCategory === item.name;
+                    return (
+                      <TouchableOpacity
+                        style={[styles.categoryBtn, isActive && styles.categoryBtnActive]}
+                        onPress={() => setSelectedCategory(item.name)}
+                        activeOpacity={0.5}
+                      >
+                        <View
+                          style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}
+                        >
+                          {item.icon ? (
+                            <Image
+                              source={{ uri: item.icon }}
+                              style={styles.categoryIcon}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <Ionicons
+                              name={item.name === "All" ? "apps-outline" : "pricetag-outline"}
+                              size={20}
+                              color={isActive ? "white" : "#6B7280"}
+                            />
+                          )}
+                        </View>
+                        <Text
+                          style={[styles.categoryText, isActive && styles.categoryTextActive]}
+                        >
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+
+              <View style={styles.sectionHeading}>
+                <Text style={styles.sectionTitle}>
+                  {locationEnabled ? "Nearby Businesses" : "All Businesses"}
+                </Text>
+              </View>
+            </>
+          }
         />
       )}
 
@@ -292,10 +307,8 @@ export default CustomerHome;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
-
   topbar: {
     backgroundColor: "#2563EB",
-    paddingVertical: 18,
     paddingHorizontal: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -304,13 +317,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 5,
+    justifyContent: "flex-end",
+    paddingBottom: 12,
   },
-  topbarTitle: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
+  topbarTitle: { color: "white", fontSize: 22, fontWeight: "700", marginBottom: 12 },
   searchRow: { flexDirection: "row", alignItems: "center" },
   searchWrapper: {
     flex: 1,
@@ -320,13 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
   },
-  searchInput: {
-    flex: 1,
-    height: 38,
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#111827",
-  },
+  searchInput: { flex: 1, height: 38, marginLeft: 8, fontSize: 14, color: "#111827" },
   locationBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -336,15 +340,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
   },
-
-  // ✅ Category Styles
-  categoryBtn: {
-    alignItems: "center",
-    marginHorizontal: 8,
-  },
-  categoryBtnActive: {
-    transform: [{ scale: 1.05 }],
-  },
+  categoryBtn: { alignItems: "center", marginHorizontal: 8 },
+  categoryBtnActive: { transform: [{ scale: 1.05 }] },
   iconWrapper: {
     width: 50,
     height: 50,
@@ -358,29 +355,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  iconWrapperActive: {
-    backgroundColor: "#3e72e1ff",
-    shadowOpacity: 0.15,
-    elevation: 4,
-  },
-  categoryIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  categoryTextActive: {
-    color: "#2563EB",
-    fontWeight: "700",
-  },
-
+  iconWrapperActive: { backgroundColor: "#3e72e1ff", shadowOpacity: 0.15, elevation: 4 },
+  categoryIcon: { width: 28, height: 28, borderRadius: 14 },
+  categoryText: { fontSize: 13, fontWeight: "600", color: "#374151" },
+  categoryTextActive: { color: "#2563EB", fontWeight: "700" },
   sectionHeading: { paddingHorizontal: 16, paddingVertical: 8 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
-
   card: {
     flexDirection: "row",
     backgroundColor: "white",
@@ -398,14 +378,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: "700", color: "#111827" },
   category: { fontSize: 14, color: "#6B7280", marginVertical: 4 },
   distance: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
-  button: {
-    marginTop: 6,
-    backgroundColor: "#2563EB",
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignItems: "center",
-  },
+  button: { marginTop: 6, backgroundColor: "#2563EB", paddingVertical: 6, borderRadius: 8, alignItems: "center" },
   buttonText: { color: "white", fontWeight: "600" },
-
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });
