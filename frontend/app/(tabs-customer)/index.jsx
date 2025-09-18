@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import API from "../../api/axiosInstance";
 import AllOffersCarousel from "../../components/customerofferList/AllOffersCarousel";
+import {useAuthStore} from "../../store/authStore"
 
 const CustomerHome = () => {
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ const CustomerHome = () => {
   const [locationLoading, setLocationLoading] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
   const [followed, setFollowed] = useState({}); // ✅ track follow state
-
+   const { token } = useAuthStore();
   const router = useRouter();
 
   // ✅ Scroll animation
@@ -142,14 +143,22 @@ const CustomerHome = () => {
   };
 
   // ✅ Follow/Unfollow handler
-  const toggleFollow = async (businessId) => {
+ const toggleFollow = async (businessId) => {
     try {
       const currentlyFollowed = followed[businessId];
       if (currentlyFollowed) {
-        await API.delete(`/follow/${businessId}`);
+        await API.delete(`/follow/${businessId}`, {
+          headers: { Authorization: `Bearer ${token}` }, // ✅ Bearer token
+        });
         Toast.show({ type: "info", text1: "Unfollowed business" });
       } else {
-        await API.post(`/follow/${businessId}`);
+        await API.post(
+          `/follow/${businessId}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` }, // ✅ Bearer token
+          }
+        );
         Toast.show({ type: "success", text1: "Followed business" });
       }
       setFollowed((prev) => ({ ...prev, [businessId]: !currentlyFollowed }));
@@ -157,6 +166,7 @@ const CustomerHome = () => {
       Toast.show({ type: "error", text1: "Failed to update follow status" });
     }
   };
+
 
   // ✅ Filter businesses
   const filteredBusinesses = businesses.filter(

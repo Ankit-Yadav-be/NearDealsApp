@@ -46,7 +46,7 @@ export const createBusiness = async (req, res) => {
 export const getBusinesses = async (req, res) => {
   try {
     const businesses = await Business.find().populate("owner", "name email");
-
+    
     let userId = req.user ? req.user._id : null;
     let followedMap = {};
 
