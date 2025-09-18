@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import API from "../../api/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/authStore";
+import OfferModal from "../../components/ownerOfferModal/Offer"; 
 
 const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
@@ -28,6 +29,7 @@ const OwnerBusinessDetailPage = () => {
 
   // Edit Modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
+   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -161,6 +163,9 @@ const OwnerBusinessDetailPage = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Business</Text>
         <View style={styles.headerActions}>
+           <TouchableOpacity style={styles.iconBtn} onPress={() => setOfferModalVisible(true)}>
+            <Ionicons name="pricetag-outline" size={22} color="#2563EB" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={openReviewsModal}>
             <Ionicons name="chatbubbles-outline" size={22} color="#2563EB" />
           </TouchableOpacity>
@@ -291,49 +296,54 @@ const OwnerBusinessDetailPage = () => {
 
       {/* Reviews Modal */}
       {/* Reviews Modal */}
-<Modal
-  visible={reviewsModalVisible}
-  animationType="slide"
-  transparent
-  onRequestClose={() => setReviewsModalVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={[styles.modalContainer, { maxHeight: "80%" }]}>
-      
-      {/* Header with total reviews count */}
-      <View style={styles.reviewHeader}>
-        <Text style={styles.modalTitle}>
-          Reviews ({reviews.length})
-        </Text>
-        <TouchableOpacity
-          onPress={() => setReviewsModalVisible(false)}
-          style={styles.closeBtn}
-        >
-          <Ionicons name="close" size={22} color="#111827" />
-        </TouchableOpacity>
-      </View>
+      <Modal
+        visible={reviewsModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setReviewsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { maxHeight: "80%" }]}>
 
-      {reviewsLoading ? (
-        <ActivityIndicator size="large" color="#2563EB" />
-      ) : reviews.length > 0 ? (
-        <ScrollView>
-          {reviews.map((rev) => (
-            <View key={rev._id} style={styles.reviewCard}>
-              <Text style={styles.reviewUser}>
-                {rev.user?.name || "Anonymous"}
+            {/* Header with total reviews count */}
+            <View style={styles.reviewHeader}>
+              <Text style={styles.modalTitle}>
+                Reviews ({reviews.length})
               </Text>
-              <Text style={styles.reviewRating}>⭐ {rev.rating}/5</Text>
-              <Text style={styles.reviewComment}>{rev.comment}</Text>
+              <TouchableOpacity
+                onPress={() => setReviewsModalVisible(false)}
+                style={styles.closeBtn}
+              >
+                <Ionicons name="close" size={22} color="#111827" />
+              </TouchableOpacity>
             </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <Text style={{ color: "#6B7280" }}>No reviews yet.</Text>
-      )}
-    </View>
-  </View>
-</Modal>
 
+            {reviewsLoading ? (
+              <ActivityIndicator size="large" color="#2563EB" />
+            ) : reviews.length > 0 ? (
+              <ScrollView>
+                {reviews.map((rev) => (
+                  <View key={rev._id} style={styles.reviewCard}>
+                    <Text style={styles.reviewUser}>
+                      {rev.user?.name || "Anonymous"}
+                    </Text>
+                    <Text style={styles.reviewRating}>⭐ {rev.rating}/5</Text>
+                    <Text style={styles.reviewComment}>{rev.comment}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={{ color: "#6B7280" }}>No reviews yet.</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
+       <OfferModal
+        visible={offerModalVisible}
+        onClose={() => setOfferModalVisible(false)}
+        businessId={businessDetail}
+        
+      />
     </View>
   );
 };
@@ -440,15 +450,15 @@ const styles = StyleSheet.create({
   reviewRating: { fontSize: 14, color: "#F59E0B", marginVertical: 2 },
   reviewComment: { fontSize: 14, color: "#374151" },
   reviewHeader: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 10,
-},
-closeBtn: {
-  backgroundColor: "#E5E7EB",
-  padding: 6,
-  borderRadius: 50,
-},
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  closeBtn: {
+    backgroundColor: "#E5E7EB",
+    padding: 6,
+    borderRadius: 50,
+  },
 
 });

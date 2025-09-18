@@ -73,6 +73,38 @@ export const getBusinessOffers = async (req, res) => {
   }
 };
 
+// @desc    Get all active offers across businesses
+// @route   GET /api/offers
+// @access  Public
+export const getAllOffers = async (req, res) => {
+  try {
+    const { active } = req.query;
+
+    // by default active offers hi dikhayenge
+    const today = new Date();
+    const query = {};
+
+    if (active === "true") {
+      query.isActive = true;
+      query.validFrom = { $lte: today }; // already started
+      query.validTo = { $gte: today };   // not expired
+    }
+
+    const offers = await Offer.find(query)
+      .populate(
+        "business",
+        "name category images contact location rating averageRating numReviews"
+      )
+      .sort({ createdAt: -1 }); // latest offers first
+
+    res.status(200).json(offers);
+  } catch (error) {
+    console.error("Error fetching all offers:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 // @desc    Update an offer
 // @route   PUT /api/offers/:id
 // @access  Private (owner or admin)

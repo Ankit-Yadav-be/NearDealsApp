@@ -13,16 +13,18 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
+import Toast from "react-native-toast-message"; // ✅ Toast import
 import API from "../../api/axiosInstance";
 import { useAuthStore } from "../../store/authStore";
-import Toast from "react-native-toast-message"; // ✅ import
+import CustomerOffer from "../../components/customerofferList/CustomerOffer";
 
 const CustomerBusinessDetailPage = () => {
   const { businessDetail } = useLocalSearchParams();
+  const token = useAuthStore((s) => s.token);
+
   const [business, setBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const token = useAuthStore((s) => s.token);
 
   const [reviews, setReviews] = useState([]);
   const [reviewModal, setReviewModal] = useState(false);
@@ -111,7 +113,9 @@ const CustomerBusinessDetailPage = () => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={{ marginTop: 8, color: "#374151" }}>Loading Business...</Text>
+        <Text style={{ marginTop: 8, color: "#374151" }}>
+          Loading Business...
+        </Text>
       </View>
     );
   }
@@ -157,6 +161,11 @@ const CustomerBusinessDetailPage = () => {
         </View>
       </View>
 
+      {/* Offers List */}
+      <View >
+        <CustomerOffer businessId={businessDetail} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Image Gallery */}
         {business.images?.length > 0 ? (
@@ -184,7 +193,8 @@ const CustomerBusinessDetailPage = () => {
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={18} color="#FFD700" />
             <Text style={styles.ratingText}>
-              {business.averageRating?.toFixed(1) || 0} ({business.numReviews || 0} reviews)
+              {business.averageRating?.toFixed(1) || 0} (
+              {business.numReviews || 0} reviews)
             </Text>
           </View>
         </View>
@@ -224,8 +234,14 @@ const CustomerBusinessDetailPage = () => {
             reviews.map((r, i) => (
               <View key={i} style={styles.reviewItem}>
                 <View style={styles.reviewHeader}>
-                  <Ionicons name="person-circle-outline" size={24} color="#2563EB" />
-                  <Text style={styles.reviewUser}>{r.user?.name || "Anonymous"}</Text>
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={24}
+                    color="#2563EB"
+                  />
+                  <Text style={styles.reviewUser}>
+                    {r.user?.name || "Anonymous"}
+                  </Text>
                   <Text style={styles.reviewRating}>⭐ {r.rating}</Text>
                 </View>
                 <Text style={styles.reviewComment}>{r.comment}</Text>
@@ -273,14 +289,19 @@ const CustomerBusinessDetailPage = () => {
                 {submitting ? "Submitting..." : "Submit Review"}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setReviewModal(false)} style={{ marginTop: 10 }}>
-              <Text style={{ color: "#EF4444", textAlign: "center" }}>Cancel</Text>
+            <TouchableOpacity
+              onPress={() => setReviewModal(false)}
+              style={{ marginTop: 10 }}
+            >
+              <Text style={{ color: "#EF4444", textAlign: "center" }}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* ✅ Toast Component */}
+      {/* Toast Component */}
       <Toast />
     </View>
   );
@@ -289,10 +310,11 @@ const CustomerBusinessDetailPage = () => {
 export default CustomerBusinessDetailPage;
 
 
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scroll: { padding: 16, paddingBottom: 80 },
+  scroll: { padding: 16, paddingBottom: 80, marginTop:0 },
 
   // Header
   header: {
