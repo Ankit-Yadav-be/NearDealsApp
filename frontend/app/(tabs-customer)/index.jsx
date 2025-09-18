@@ -26,6 +26,7 @@ const CustomerHome = () => {
   const [search, setSearch] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+  const [followed, setFollowed] = useState({}); // ✅ track follow state
 
   const router = useRouter();
 
@@ -33,12 +34,12 @@ const CustomerHome = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 60],
-    outputRange: [100, 60], // Shrinks height
+    outputRange: [100, 60], 
     extrapolate: "clamp",
   });
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [1, 0.9], // Slight fade
+    outputRange: [1, 0.9],
     extrapolate: "clamp",
   });
 
@@ -68,6 +69,14 @@ const CustomerHome = () => {
       const res = await API.get("/business");
       setBusinesses(res.data);
       setLocationEnabled(false);
+
+      // initialize follow state
+      const followMap = {};
+      res.data.forEach((b) => {
+        followMap[b._id] = b.isFollowed || false; 
+      });
+      setFollowed(followMap);
+
       Toast.show({ type: "success", text1: "Businesses loaded successfully!" });
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to fetch businesses" });
@@ -106,6 +115,13 @@ const CustomerHome = () => {
       });
       setBusinesses(res.data);
       setLocationEnabled(true);
+
+      const followMap = {};
+      res.data.forEach((b) => {
+        followMap[b._id] = b.isFollowed || false;
+      });
+      setFollowed(followMap);
+
       Toast.show({ type: "success", text1: "Nearby businesses loaded!" });
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to fetch nearby businesses" });
@@ -122,6 +138,23 @@ const CustomerHome = () => {
       setCategories([{ _id: "all", name: "All", icon: null }, ...res.data]);
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to load categories" });
+    }
+  };
+
+  // ✅ Follow/Unfollow handler
+  const toggleFollow = async (businessId) => {
+    try {
+      const currentlyFollowed = followed[businessId];
+      if (currentlyFollowed) {
+        await API.delete(`/follow/${businessId}`);
+        Toast.show({ type: "info", text1: "Unfollowed business" });
+      } else {
+        await API.post(`/follow/${businessId}`);
+        Toast.show({ type: "success", text1: "Followed business" });
+      }
+      setFollowed((prev) => ({ ...prev, [businessId]: !currentlyFollowed }));
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Failed to update follow status" });
     }
   };
 
@@ -154,31 +187,39 @@ const CustomerHome = () => {
 
     return (
       <Animated.View style={{ opacity: fadeAnim }}>
-        <TouchableOpacity
-          style={styles.card}
-          activeOpacity={0.8}
-          onPress={() => router.push(`/(customer)/${item._id}`)}
-        >
-          <Image
-            source={
-              item.images?.length
-                ? { uri: item.images[0] }
-                : require("../../assets/images/icon.png")
-            }
-            style={styles.image}
-          />
-          <View style={styles.info}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.category}>{item.category}</Text>
-            <Text style={styles.distance}>{distanceText}</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => router.push(`/(customer)/${item._id}`)}
-            >
-              <Text style={styles.buttonText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={{ flex: 1, flexDirection: "row" }}
+            activeOpacity={0.8}
+            onPress={() => router.push(`/(customer)/${item._id}`)}
+          >
+            <Image
+              source={
+                item.images?.length
+                  ? { uri: item.images[0] }
+                  : require("../../assets/images/icon.png")
+              }
+              style={styles.image}
+            />
+            <View style={styles.info}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.category}>{item.category}</Text>
+              <Text style={styles.distance}>{distanceText}</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* ✅ Follow icon */}
+          <TouchableOpacity
+            style={styles.followIcon}
+            onPress={() => toggleFollow(item._id)}
+          >
+            <Ionicons
+              name={followed[item._id] ? "heart" : "heart-outline"}
+              size={26}
+              color={followed[item._id] ? "#EF4444" : "#6B7280"}
+            />
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     );
   };
@@ -186,7 +227,9 @@ const CustomerHome = () => {
   return (
     <View style={styles.container}>
       {/* ✅ Animated Topbar */}
-      <Animated.View style={[styles.topbar, { height: headerHeight, opacity: headerOpacity }]}>
+      <Animated.View
+        style={[styles.topbar, { height: headerHeight, opacity: headerOpacity }]}
+      >
         <Text style={styles.topbarTitle}>Explore Businesses</Text>
         <View style={styles.searchRow}>
           <View style={styles.searchWrapper}>
@@ -222,7 +265,9 @@ const CustomerHome = () => {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={{ marginTop: 10, color: "#374151" }}>
-            {locationEnabled ? "Fetching nearby businesses..." : "Loading businesses..."}
+            {locationEnabled
+              ? "Fetching nearby businesses..."
+              : "Loading businesses..."}
           </Text>
         </View>
       ) : filteredBusinesses.length === 0 ? (
@@ -372,13 +417,17 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 4,
+    alignItems: "center",
   },
   image: { width: 90, height: 90, borderRadius: 12, marginRight: 12 },
-  info: { flex: 1, justifyContent: "space-between" },
+  info: { flex: 1, justifyContent: "center" },
   name: { fontSize: 18, fontWeight: "700", color: "#111827" },
   category: { fontSize: 14, color: "#6B7280", marginVertical: 4 },
   distance: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
-  button: { marginTop: 6, backgroundColor: "#2563EB", paddingVertical: 6, borderRadius: 8, alignItems: "center" },
-  buttonText: { color: "white", fontWeight: "600" },
+  followIcon: {
+    marginLeft: 10,
+    padding: 6,
+    borderRadius: 30,
+  },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });
