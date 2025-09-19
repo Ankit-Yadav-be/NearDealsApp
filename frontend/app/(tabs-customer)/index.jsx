@@ -16,7 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import API from "../../api/axiosInstance";
 import AllOffersCarousel from "../../components/customerofferList/AllOffersCarousel";
-import {useAuthStore} from "../../store/authStore"
+import { useAuthStore } from "../../store/authStore";
+import ModernLoader from "../../components/ModernLoader";
+import { useFocusEffect } from "@react-navigation/native";
 
 const CustomerHome = () => {
   const [loading, setLoading] = useState(true);
@@ -27,15 +29,14 @@ const CustomerHome = () => {
   const [search, setSearch] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
-  const [followed, setFollowed] = useState({}); // ✅ track follow state
-   const { token } = useAuthStore();
+  const [followed, setFollowed] = useState({});
+  const { token } = useAuthStore();
   const router = useRouter();
 
-  // ✅ Scroll animation
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 60],
-    outputRange: [100, 60], 
+    outputRange: [100, 60],
     extrapolate: "clamp",
   });
   const headerOpacity = scrollY.interpolate({
@@ -44,12 +45,13 @@ const CustomerHome = () => {
     extrapolate: "clamp",
   });
 
-  useEffect(() => {
+ useFocusEffect(
+  React.useCallback(() => {
     fetchAllBusinesses();
-    fetchCategories();
-  }, []);
+    fetchCategories();   // Screen dikhte hi dubara load hoga
+  }, [])
+);
 
-  // ✅ Distance calculator
   const getDistanceFromLatLon = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -57,28 +59,24 @@ const CustomerHome = () => {
     const a =
       Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return (R * c).toFixed(1);
   };
 
-  // ✅ Fetch all businesses
   const fetchAllBusinesses = async () => {
     try {
       setLoading(true);
-      const res = await API.get("/business");
+      const res = await API.get("/business", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setBusinesses(res.data);
       setLocationEnabled(false);
 
-      // initialize follow state
       const followMap = {};
-      res.data.forEach((b) => {
-        followMap[b._id] = b.isFollowed || false; 
-      });
+      res.data.forEach((b) => (followMap[b._id] = b.isFollowed || false));
       setFollowed(followMap);
-
-      Toast.show({ type: "success", text1: "Businesses loaded successfully!" });
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to fetch businesses" });
     } finally {
@@ -86,8 +84,7 @@ const CustomerHome = () => {
     }
   };
 
-  // ✅ Fetch nearby businesses
-  const getLocationAndFetch = async () => {
+  const fetchNearbyBusinesses = async () => {
     try {
       setLocationLoading(true);
       const isServiceEnabled = await Location.hasServicesEnabledAsync();
@@ -113,17 +110,14 @@ const CustomerHome = () => {
       setLoading(true);
       const res = await API.get("/business/nearby", {
         params: { lat: latitude, lng: longitude, radius: 10 },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setBusinesses(res.data);
       setLocationEnabled(true);
 
       const followMap = {};
-      res.data.forEach((b) => {
-        followMap[b._id] = b.isFollowed || false;
-      });
+      res.data.forEach((b) => (followMap[b._id] = b.isFollowed || false));
       setFollowed(followMap);
-
-      Toast.show({ type: "success", text1: "Nearby businesses loaded!" });
     } catch (err) {
       Toast.show({ type: "error", text1: "Failed to fetch nearby businesses" });
     } finally {
@@ -132,7 +126,14 @@ const CustomerHome = () => {
     }
   };
 
-  // ✅ Fetch categories
+  const handleLocationToggle = () => {
+    if (locationEnabled) {
+      fetchAllBusinesses();
+    } else {
+      fetchNearbyBusinesses();
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const res = await API.get("/category");
@@ -142,22 +143,19 @@ const CustomerHome = () => {
     }
   };
 
-  // ✅ Follow/Unfollow handler
- const toggleFollow = async (businessId) => {
+  const toggleFollow = async (businessId) => {
     try {
       const currentlyFollowed = followed[businessId];
       if (currentlyFollowed) {
         await API.delete(`/follow/${businessId}`, {
-          headers: { Authorization: `Bearer ${token}` }, // ✅ Bearer token
+          headers: { Authorization: `Bearer ${token}` },
         });
         Toast.show({ type: "info", text1: "Unfollowed business" });
       } else {
         await API.post(
           `/follow/${businessId}`,
           {},
-          {
-            headers: { Authorization: `Bearer ${token}` }, // ✅ Bearer token
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         Toast.show({ type: "success", text1: "Followed business" });
       }
@@ -167,8 +165,6 @@ const CustomerHome = () => {
     }
   };
 
-
-  // ✅ Filter businesses
   const filteredBusinesses = businesses.filter(
     (b) =>
       b.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -218,16 +214,33 @@ const CustomerHome = () => {
             </View>
           </TouchableOpacity>
 
-          {/* ✅ Follow icon */}
           <TouchableOpacity
-            style={styles.followIcon}
+            style={[
+              styles.followBtn,
+              followed[item._id] ? styles.following : styles.notFollowing,
+            ]}
             onPress={() => toggleFollow(item._id)}
+            activeOpacity={0.8}
           >
-            <Ionicons
-              name={followed[item._id] ? "heart" : "heart-outline"}
-              size={26}
-              color={followed[item._id] ? "#EF4444" : "#6B7280"}
-            />
+            <View style={styles.followContent}>
+              <Ionicons
+                name={
+                  followed[item._id] ? "checkmark-circle" : "add-circle-outline"
+                }
+                size={16}
+                color={followed[item._id] ? "#059669" : "#2563EB"}
+              />
+              <Text
+                style={[
+                  styles.followBtnText,
+                  followed[item._id]
+                    ? styles.followingText
+                    : styles.notFollowingText,
+                ]}
+              >
+                {followed[item._id] ? "Following" : "Follow"}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -236,7 +249,6 @@ const CustomerHome = () => {
 
   return (
     <View style={styles.container}>
-      {/* ✅ Animated Topbar */}
       <Animated.View
         style={[styles.topbar, { height: headerHeight, opacity: headerOpacity }]}
       >
@@ -253,33 +265,34 @@ const CustomerHome = () => {
           </View>
 
           <TouchableOpacity
-            style={[styles.locationBtn, locationEnabled && { backgroundColor: "#059669" }]}
-            onPress={getLocationAndFetch}
+            style={[
+              styles.locationToggle,
+              locationEnabled ? styles.locationEnabled : styles.locationDisabled,
+            ]}
+            onPress={handleLocationToggle}
             disabled={locationLoading}
+            activeOpacity={0.8}
           >
             {locationLoading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Ionicons
-                name={locationEnabled ? "location" : "location-outline"}
-                size={22}
-                color="white"
-              />
+              <>
+                <Ionicons
+                  name={locationEnabled ? "location" : "location-outline"}
+                  size={20}
+                  color="white"
+                />
+                <Text style={styles.locationText}>
+                  {locationEnabled ? "Nearby" : "All"}
+                </Text>
+              </>
             )}
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      {/* ✅ Scrollable Content */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={{ marginTop: 10, color: "#374151" }}>
-            {locationEnabled
-              ? "Fetching nearby businesses..."
-              : "Loading businesses..."}
-          </Text>
-        </View>
+        <ModernLoader locationLoading={locationLoading} />
       ) : filteredBusinesses.length === 0 ? (
         <View style={styles.center}>
           <Ionicons name="search-outline" size={60} color="#9CA3AF" />
@@ -292,58 +305,65 @@ const CustomerHome = () => {
           data={filteredBusinesses}
           renderItem={renderBusiness}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingBottom: 80 }}
+          contentContainerStyle={{ paddingBottom: 90 }}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: false }
           )}
           ListHeaderComponent={
             <>
-              <AllOffersCarousel />
-              {/* ✅ Category Filter */}
-              <View style={{ paddingVertical: 12 }}>
-                <FlatList
-                  data={categories}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item) => item._id}
-                  renderItem={({ item }) => {
-                    const isActive = selectedCategory === item.name;
-                    return (
-                      <TouchableOpacity
-                        style={[styles.categoryBtn, isActive && styles.categoryBtnActive]}
-                        onPress={() => setSelectedCategory(item.name)}
-                        activeOpacity={0.5}
-                      >
-                        <View
-                          style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}
-                        >
-                          {item.icon ? (
-                            <Image
-                              source={{ uri: item.icon }}
-                              style={styles.categoryIcon}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <Ionicons
-                              name={item.name === "All" ? "apps-outline" : "pricetag-outline"}
-                              size={20}
-                              color={isActive ? "white" : "#6B7280"}
-                            />
-                          )}
-                        </View>
-                        <Text
-                          style={[styles.categoryText, isActive && styles.categoryTextActive]}
-                        >
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
+              {/* --- Offers Carousel --- */}
+              <View style={{ marginVertical: 12 }}>
+                <AllOffersCarousel />
               </View>
 
+              {/* --- Categories Section --- */}
               <View style={styles.sectionHeading}>
+                <Text style={styles.sectionTitle}>Categories</Text>
+              </View>
+              <FlatList
+                data={categories}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item._id}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}
+                renderItem={({ item }) => {
+                  const isActive = selectedCategory === item.name;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.categoryBtn, isActive && styles.categoryBtnActive]}
+                      onPress={() => setSelectedCategory(item.name)}
+                      activeOpacity={0.5}
+                    >
+                      <View
+                        style={[styles.iconWrapper, isActive && styles.iconWrapperActive]}
+                      >
+                        {item.icon ? (
+                          <Image
+                            source={{ uri: item.icon }}
+                            style={styles.categoryIcon}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <Ionicons
+                            name={item.name === "All" ? "apps-outline" : "pricetag-outline"}
+                            size={20}
+                            color={isActive ? "white" : "#6B7280"}
+                          />
+                        )}
+                      </View>
+                      <Text
+                        style={[styles.categoryText, isActive && styles.categoryTextActive]}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              {/* --- Businesses Heading --- */}
+              <View style={[styles.sectionHeading, { marginTop: 8 }]}>
                 <Text style={styles.sectionTitle}>
                   {locationEnabled ? "Nearby Businesses" : "All Businesses"}
                 </Text>
@@ -375,7 +395,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingBottom: 12,
   },
-  topbarTitle: { color: "white", fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  topbarTitle: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
   searchRow: { flexDirection: "row", alignItems: "center" },
   searchWrapper: {
     flex: 1,
@@ -385,37 +410,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
   },
-  searchInput: { flex: 1, height: 38, marginLeft: 8, fontSize: 14, color: "#111827" },
-  locationBtn: {
+  searchInput: {
+    flex: 1,
+    height: 38,
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#111827",
+  },
+  followContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 10,
-    backgroundColor: "#1E40AF",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
+    justifyContent: "center",
+    gap: 6,
   },
-  categoryBtn: { alignItems: "center", marginHorizontal: 8 },
-  categoryBtnActive: { transform: [{ scale: 1.05 }] },
+  followBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginLeft: 8,
+  },
+  notFollowing: { borderColor: "#2563EB", backgroundColor: "white" },
+  following: { borderColor: "#059669", backgroundColor: "#ECFDF5" },
+  followBtnText: { fontSize: 13, fontWeight: "700" },
+  notFollowingText: { color: "#2563EB" },
+  followingText: { color: "#059669" },
+  categoryBtn: { alignItems: "center", marginHorizontal: 6 },
+  categoryBtnActive: { transform: [{ scale: 1.1 }] },
   iconWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 4,
     shadowColor: "#000",
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
-  iconWrapperActive: { backgroundColor: "#3e72e1ff", shadowOpacity: 0.15, elevation: 4 },
-  categoryIcon: { width: 28, height: 28, borderRadius: 14 },
-  categoryText: { fontSize: 13, fontWeight: "600", color: "#374151" },
+  iconWrapperActive: {
+    backgroundColor: "#3e72e1ff",
+    shadowOpacity: 0.15,
+    elevation: 3,
+  },
+  categoryIcon: { width: 24, height: 24, borderRadius: 12 },
+  categoryText: { fontSize: 12, fontWeight: "600", color: "#374151" },
   categoryTextActive: { color: "#2563EB", fontWeight: "700" },
   sectionHeading: { paddingHorizontal: 16, paddingVertical: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
   card: {
     flexDirection: "row",
     backgroundColor: "white",
@@ -434,10 +478,20 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: "700", color: "#111827" },
   category: { fontSize: 14, color: "#6B7280", marginVertical: 4 },
   distance: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
-  followIcon: {
-    marginLeft: 10,
-    padding: 6,
-    borderRadius: 30,
-  },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  locationToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 30,
+    marginLeft: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  locationEnabled: { backgroundColor: "#059669" },
+  locationDisabled: { backgroundColor: "#2563EB" },
+  locationText: { color: "white", fontWeight: "600", marginLeft: 6, fontSize: 14 },
 });

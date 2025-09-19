@@ -10,11 +10,12 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import API from "../../api/axiosInstance";
-
+import { LinearGradient } from "expo-linear-gradient";
+import {useRouter} from "expo-router"
 const AllOffersCarousel = () => {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const router = useRouter();
   useEffect(() => {
     fetchOffers();
   }, []);
@@ -33,8 +34,8 @@ const AllOffersCarousel = () => {
 
   const renderOffer = ({ item }) => {
     return (
-      <View style={styles.card}>
-        {/* Image */}
+      <TouchableOpacity onPress={()=>{router.push(`/(customer)/${item.business._id}`)}}>
+        <View style={styles.card}>
         <Image
           source={
             item.business?.images?.length
@@ -43,17 +44,18 @@ const AllOffersCarousel = () => {
           }
           style={styles.image}
         />
+        {/* Ribbon-style discount badge */}
+        <LinearGradient
+          colors={["#DC2626", "#F87171"]}
+          style={styles.discountBadge}
+        >
+          <Text style={styles.discountText}>{item.discountPercent}% OFF</Text>
+        </LinearGradient>
 
-        {/* Info */}
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={1}>
             {item.title}
           </Text>
-
-          <View style={styles.row}>
-            <Ionicons name="pricetag" size={14} color="#DC2626" />
-            <Text style={styles.discount}>{item.discountPercent}% OFF</Text>
-          </View>
 
           <View style={styles.row}>
             <MaterialCommunityIcons
@@ -73,19 +75,27 @@ const AllOffersCarousel = () => {
             </Text>
           </View>
 
-          <View style={styles.row}>
-            <Ionicons name="time-outline" size={13} color="#059669" />
-            <Text style={styles.validity}>
-              {new Date(item.validTo).toLocaleDateString()}
-            </Text>
-          </View>
+          <View style={[styles.row, { justifyContent: "space-between" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons name="time-outline" size={13} color="#059669" />
+              <Text style={styles.validity}>
+                {new Date(item.validTo).toLocaleDateString()}
+              </Text>
+            </View>
 
-          <TouchableOpacity style={styles.btn}>
-            <Ionicons name="gift-outline" size={14} color="white" />
-            <Text style={styles.btnText}>Grab</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.btn}>
+              <LinearGradient
+                colors={["#2563EB", "#3B82F6"]}
+                style={styles.btnGradient}
+              >
+                <Ionicons name="gift-outline" size={14} color="white" />
+                <Text style={styles.btnText}>Grab</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+      </TouchableOpacity>
     );
   };
 
@@ -93,7 +103,9 @@ const AllOffersCarousel = () => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={{ marginTop: 10 }}>Loading best offers...</Text>
+        <Text style={{ marginTop: 10, color: "#374151" }}>
+          Loading hot deals...
+        </Text>
       </View>
     );
   }
@@ -110,7 +122,7 @@ const AllOffersCarousel = () => {
   }
 
   return (
-    <View style={{ marginTop: 10 }}>
+    <View style={{ marginTop: 1, }}>
       <Text style={styles.heading}> Hot Deals Near You</Text>
       <FlatList
         data={offers}
@@ -135,35 +147,45 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   card: {
-    backgroundColor: "white",
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
     marginRight: 12,
-    width: 160, // thoda narrow
+    marginBottom:4,
+    width: 180,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
     overflow: "hidden",
   },
   image: {
     width: "100%",
-    height: 65, // 👈 chhota kiya
+    height: 100,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  discountBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  discountText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 11,
   },
   info: {
-    padding: 6, // 👈 kam padding
+    padding: 8,
   },
   title: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: "#1F2937",
-    marginBottom: 1,
-  },
-  discount: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#DC2626",
-    marginLeft: 3,
+    marginBottom: 4,
   },
   business: {
     fontSize: 11,
@@ -172,37 +194,39 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   location: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#2563EB",
     marginLeft: 3,
     flexShrink: 1,
   },
   validity: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#059669",
     marginLeft: 3,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 1, // 👈 spacing kam
+    marginTop: 2,
   },
   btn: {
-    flexDirection: "row",
-    backgroundColor: "#2563EB",
-    paddingVertical: 3,
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4, // 👈 spacing kam
+    marginTop: 1,
     alignSelf: "flex-start",
-    paddingHorizontal: 7,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  btnGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   btnText: {
     color: "white",
-    marginLeft: 3,
+    marginLeft: 4,
     fontWeight: "600",
-    fontSize: 11,
+    fontSize: 12,
   },
   center: {
     alignItems: "center",
@@ -210,4 +234,3 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
 });
-

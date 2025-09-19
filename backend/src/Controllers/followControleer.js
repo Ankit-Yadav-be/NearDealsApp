@@ -10,9 +10,14 @@ export const followBusiness = async (req, res) => {
     const userId = req.user._id; // middleware se ayega
 
     // check if already following
-    const existingFollow = await Follow.findOne({ user: userId, business: businessId });
+    const existingFollow = await Follow.findOne({
+      user: userId,
+      business: businessId,
+    });
     if (existingFollow) {
-      return res.status(400).json({ message: "Already following this business" });
+      return res
+        .status(400)
+        .json({ message: "Already following this business" });
     }
 
     const follow = new Follow({ user: userId, business: businessId });
@@ -32,7 +37,10 @@ export const unfollowBusiness = async (req, res) => {
     const { businessId } = req.params;
     const userId = req.user._id;
 
-    const deleted = await Follow.findOneAndDelete({ user: userId, business: businessId });
+    const deleted = await Follow.findOneAndDelete({
+      user: userId,
+      business: businessId,
+    });
 
     if (!deleted) {
       return res.status(404).json({ message: "Not following this business" });
@@ -51,8 +59,10 @@ export const getMyFollowedBusinesses = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const follows = await Follow.find({ user: userId })
-      .populate("business", "name category images location");
+    const follows = await Follow.find({ user: userId }).populate(
+      "business",
+      "name category images location"
+    );
 
     res.status(200).json(follows);
   } catch (error) {
@@ -68,7 +78,10 @@ export const getBusinessFollowers = async (req, res) => {
   try {
     const { businessId } = req.params;
 
-    const followers = await Follow.find({ business: businessId }).populate("user", "name email");
+    const followers = await Follow.find({ business: businessId }).populate(
+      "user",
+      "name email"
+    );
 
     res.status(200).json(followers);
   } catch (error) {

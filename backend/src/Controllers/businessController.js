@@ -40,13 +40,13 @@ export const createBusiness = async (req, res) => {
   }
 };
 
-// @desc Get all businesses
+// @desc Get all businesses (with followers count & isFollowed)
 // @route GET /api/business
-// @access Public (but adds isFollowed if logged in)
+// @access Public
 export const getBusinesses = async (req, res) => {
   try {
     const businesses = await Business.find().populate("owner", "name email");
-    
+
     let userId = req.user ? req.user._id : null;
     let followedMap = {};
 
@@ -58,9 +58,19 @@ export const getBusinesses = async (req, res) => {
       }, {});
     }
 
+    // Followers count fetch karna
+    const counts = await Follow.aggregate([
+      { $group: { _id: "$business", count: { $sum: 1 } } },
+    ]);
+    const countMap = counts.reduce((map, c) => {
+      map[c._id.toString()] = c.count;
+      return map;
+    }, {});
+
     const response = businesses.map((b) => ({
       ...b.toObject(),
       isFollowed: !!followedMap[b._id.toString()],
+      followersCount: countMap[b._id.toString()] || 0,
     }));
 
     res.json(response);
@@ -69,7 +79,7 @@ export const getBusinesses = async (req, res) => {
   }
 };
 
-// @desc Get business by ID
+// @desc Get business by ID (with followers count & isFollowed)
 // @route GET /api/business/:id
 // @access Public
 export const getBusinessById = async (req, res) => {
@@ -90,15 +100,20 @@ export const getBusinessById = async (req, res) => {
       if (follow) isFollowed = true;
     }
 
-    res.json({ ...business.toObject(), isFollowed });
+    // followers count
+    const followersCount = await Follow.countDocuments({
+      business: req.params.id,
+    });
+
+    res.json({ ...business.toObject(), isFollowed, followersCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc Get nearby businesses
+// @desc Get nearby businesses (with followers count & isFollowed)
 // @route GET /api/business/nearby?lng=...&lat=...&radius=...
-// @access Public (but adds isFollowed if logged in)
+// @access Public
 export const getNearbyBusinesses = async (req, res) => {
   try {
     const { lng, lat, radius } = req.query;
@@ -129,9 +144,19 @@ export const getNearbyBusinesses = async (req, res) => {
       }, {});
     }
 
+    // Followers count fetch karna
+    const counts = await Follow.aggregate([
+      { $group: { _id: "$business", count: { $sum: 1 } } },
+    ]);
+    const countMap = counts.reduce((map, c) => {
+      map[c._id.toString()] = c.count;
+      return map;
+    }, {});
+
     const response = businesses.map((b) => ({
       ...b.toObject(),
       isFollowed: !!followedMap[b._id.toString()],
+      followersCount: countMap[b._id.toString()] || 0,
     }));
 
     res.json(response);
@@ -140,9 +165,7 @@ export const getNearbyBusinesses = async (req, res) => {
   }
 };
 
-// @desc Update business
-// @route PUT /api/business/:id
-// @access Private (owner or admin)
+// Update & Delete same as before (no change)
 export const updateBusiness = async (req, res) => {
   try {
     const { id } = req.params;
@@ -172,9 +195,6 @@ export const updateBusiness = async (req, res) => {
   }
 };
 
-// @desc Delete business
-// @route DELETE /api/business/:id
-// @access Private (owner or admin)
 export const deleteBusiness = async (req, res) => {
   try {
     const business = await Business.findById(req.params.id);
