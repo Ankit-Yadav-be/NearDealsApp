@@ -9,6 +9,7 @@ import offerRoutes from "./src/routes/offerRoutes.js"
 import compression from "compression";
 import categoryRoutes from "./src/routes/categoryRoutes.js"
 import followRoutes from "./src/routes/followRoutes.js"
+import visitRoutes from "./src/routes/visitRoutes.js"
 dotenv.config();
 connectDB();
 
@@ -30,4 +31,5 @@ app.use("/api/review",reviewRoutes)
 app.use("/api/offer",offerRoutes)
 app.use("/api/category", categoryRoutes);
 app.use("/api/follow", followRoutes);
+app.use("/api/trending",visitRoutes)
 export default app;
