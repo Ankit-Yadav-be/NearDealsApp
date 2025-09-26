@@ -1,5 +1,8 @@
 import express from "express";
-import { createVisit, getTrendingBusinesses } from "../Controllers/visitController.js";
+import {
+  createVisit,
+  getTrendingBusinesses,
+} from "../Controllers/visitController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import Toast from "react-native-toast-message"; // ✅ Toast import
+import Toast from "react-native-toast-message";
 import API from "../../api/axiosInstance";
 import { useAuthStore } from "../../store/authStore";
 import CustomerOffer from "../../components/customerofferList/CustomerOffer";
@@ -35,17 +35,28 @@ const CustomerBusinessDetailPage = () => {
   useEffect(() => {
     fetchBusinessDetail();
     fetchReviews();
+    recordVisit(); // ✅ sirf visit record karenge
   }, [businessDetail]);
+
+  // 👉 Record a visit
+  const recordVisit = async () => {
+    try {
+      await API.post(
+        "/trending",
+        { businessId: businessDetail },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.log("❌ Visit Record Error:", err.response?.data || err);
+    }
+  };
 
   const fetchBusinessDetail = async () => {
     try {
       setLoading(true);
       const res = await API.get(`/business/${businessDetail}`);
       setBusiness(res.data);
-      Toast.show({
-        type: "success",
-        text1: "Business loaded successfully!",
-      });
+      Toast.show({ type: "success", text1: "Business loaded successfully!" });
     } catch (err) {
       console.log("❌ Fetch Business Detail Error:", err);
       Toast.show({
@@ -66,10 +77,7 @@ const CustomerBusinessDetailPage = () => {
       setReviews(res.data);
     } catch (err) {
       console.log("❌ Fetch Reviews Error:", err);
-      Toast.show({
-        type: "error",
-        text1: "Failed to load reviews",
-      });
+      Toast.show({ type: "error", text1: "Failed to load reviews" });
     }
   };
 
@@ -93,10 +101,7 @@ const CustomerBusinessDetailPage = () => {
       setReviewModal(false);
       fetchReviews();
       fetchBusinessDetail();
-      Toast.show({
-        type: "success",
-        text1: "Review submitted!",
-      });
+      Toast.show({ type: "success", text1: "Review submitted!" });
     } catch (err) {
       console.log("❌ Submit Review Error:", err.response?.data || err);
       Toast.show({
@@ -162,12 +167,10 @@ const CustomerBusinessDetailPage = () => {
       </View>
 
       {/* Offers List */}
-      <View >
-        <CustomerOffer businessId={businessDetail} />
-      </View>
+      <CustomerOffer businessId={businessDetail} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Image Gallery */}
+        {/* Business Images */}
         {business.images?.length > 0 ? (
           <FlatList
             data={business.images}
@@ -234,14 +237,8 @@ const CustomerBusinessDetailPage = () => {
             reviews.map((r, i) => (
               <View key={i} style={styles.reviewItem}>
                 <View style={styles.reviewHeader}>
-                  <Ionicons
-                    name="person-circle-outline"
-                    size={24}
-                    color="#2563EB"
-                  />
-                  <Text style={styles.reviewUser}>
-                    {r.user?.name || "Anonymous"}
-                  </Text>
+                  <Ionicons name="person-circle-outline" size={24} color="#2563EB" />
+                  <Text style={styles.reviewUser}>{r.user?.name || "Anonymous"}</Text>
                   <Text style={styles.reviewRating}>⭐ {r.rating}</Text>
                 </View>
                 <Text style={styles.reviewComment}>{r.comment}</Text>
@@ -293,9 +290,7 @@ const CustomerBusinessDetailPage = () => {
               onPress={() => setReviewModal(false)}
               style={{ marginTop: 10 }}
             >
-              <Text style={{ color: "#EF4444", textAlign: "center" }}>
-                Cancel
-              </Text>
+              <Text style={{ color: "#EF4444", textAlign: "center" }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -309,14 +304,11 @@ const CustomerBusinessDetailPage = () => {
 
 export default CustomerBusinessDetailPage;
 
-
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scroll: { padding: 16, paddingBottom: 80, marginTop:0 },
+  scroll: { padding: 16, paddingBottom: 80, marginTop: 0 },
 
-  // Header
   header: {
     backgroundColor: "#4F46E5",
     paddingHorizontal: 16,
@@ -351,7 +343,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  // Business
   image: { width: 240, height: 160, borderRadius: 16, marginRight: 12 },
   name: { fontSize: 24, fontWeight: "bold", color: "#111827", marginBottom: 6 },
   category: { fontSize: 16, color: "#6B7280", marginBottom: 6 },
@@ -359,7 +350,6 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
   ratingText: { marginLeft: 6, fontWeight: "600", color: "#111827" },
 
-  // Cards
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
@@ -373,7 +363,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontWeight: "600", marginBottom: 8, color: "#1F2937" },
   detailText: { fontSize: 14, color: "#374151", marginVertical: 2 },
 
-  // Review list
   reviewItem: {
     backgroundColor: "#F9FAFB",
     borderRadius: 14,
@@ -385,7 +374,6 @@ const styles = StyleSheet.create({
   reviewRating: { color: "#F59E0B", fontSize: 14, fontWeight: "600" },
   reviewComment: { fontSize: 14, color: "#374151", marginLeft: 30 },
 
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -402,7 +390,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalTitle: { fontSize: 19, fontWeight: "700", marginBottom: 14, textAlign: "center", color: "#111827" },
-  ratingRow: { flexDirection: "row", justifyContent: "center", marginBottom: 14 },
   commentInput: {
     borderWidth: 1,
     borderColor: "#D1D5DB",

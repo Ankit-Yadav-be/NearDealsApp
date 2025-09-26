@@ -2,14 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./src/config/db.js";
-import userRoutes from "./src/routes/userRoutes.js"
-import businessRoutes from "./src/routes/businessRoutes.js"
-import reviewRoutes from "./src/routes/reviewRoutes.js"
-import offerRoutes from "./src/routes/offerRoutes.js"
+import userRoutes from "./src/routes/userRoutes.js";
+import businessRoutes from "./src/routes/businessRoutes.js";
+import reviewRoutes from "./src/routes/reviewRoutes.js";
+import offerRoutes from "./src/routes/offerRoutes.js";
 import compression from "compression";
-import categoryRoutes from "./src/routes/categoryRoutes.js"
-import followRoutes from "./src/routes/followRoutes.js"
-import visitRoutes from "./src/routes/visitRoutes.js"
+import categoryRoutes from "./src/routes/categoryRoutes.js";
+import followRoutes from "./src/routes/followRoutes.js";
+import visitRoutes from "./src/routes/visitRoutes.js";
+import adminRoute from "./src/routes/adminRoute.js"
 dotenv.config();
 connectDB();
 
@@ -27,9 +28,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/business", businessRoutes);
-app.use("/api/review",reviewRoutes)
-app.use("/api/offer",offerRoutes)
+app.use("/api/review", reviewRoutes);
+app.use("/api/offer", offerRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/follow", followRoutes);
-app.use("/api/trending",visitRoutes)
+app.use("/api/trending", visitRoutes);
+app.use('/api/admin',adminRoute)
 export default app;

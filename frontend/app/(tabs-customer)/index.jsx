@@ -47,26 +47,26 @@ const CustomerHome = () => {
     extrapolate: "clamp",
   });
 
- useFocusEffect(
-  React.useCallback(() => {
-    fetchAllBusinesses();
-    fetchCategories();   // Screen dikhte hi dubara load hoga
-  }, [])
-);
-   
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAllBusinesses();
+      fetchCategories();   // Screen dikhte hi dubara load hoga
+    }, [])
+  );
+
   const fetchFollowersCount = async (businessId) => {
-  try {
-    const res = await API.get(`/follow/business/${businessId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setFollowerCounts((prev) => ({
-      ...prev,
-      [businessId]: res.data.length, // followers array length
-    }));
-  } catch (err) {
-    console.log("Failed to fetch followers count", err);
-  }
-};
+    try {
+      const res = await API.get(`/follow/business/${businessId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFollowerCounts((prev) => ({
+        ...prev,
+        [businessId]: res.data.length, // followers array length
+      }));
+    } catch (err) {
+      console.log("Failed to fetch followers count", err);
+    }
+  };
 
   const getDistanceFromLatLon = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
@@ -82,26 +82,26 @@ const CustomerHome = () => {
   };
 
   const fetchAllBusinesses = async () => {
-  try {
-    setLoading(true);
-    const res = await API.get("/business", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setBusinesses(res.data);
-    setLocationEnabled(false);
+    try {
+      setLoading(true);
+      const res = await API.get("/business", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBusinesses(res.data);
+      setLocationEnabled(false);
 
-    const followMap = {};
-    res.data.forEach((b) => {
-      followMap[b._id] = b.isFollowed || false;
-      fetchFollowersCount(b._id); // fetch followers for each
-    });
-    setFollowed(followMap);
-  } catch (err) {
-    Toast.show({ type: "error", text1: "Failed to fetch businesses" });
-  } finally {
-    setLoading(false);
-  }
-};
+      const followMap = {};
+      res.data.forEach((b) => {
+        followMap[b._id] = b.isFollowed || false;
+        fetchFollowersCount(b._id); // fetch followers for each
+      });
+      setFollowed(followMap);
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Failed to fetch businesses" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const fetchNearbyBusinesses = async () => {
@@ -163,33 +163,33 @@ const CustomerHome = () => {
     }
   };
 
- const toggleFollow = async (businessId) => {
-  try {
-    const currentlyFollowed = followed[businessId];
-    if (currentlyFollowed) {
-      await API.delete(`/follow/${businessId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      Toast.show({ type: "info", text1: "Unfollowed business" });
+  const toggleFollow = async (businessId) => {
+    try {
+      const currentlyFollowed = followed[businessId];
+      if (currentlyFollowed) {
+        await API.delete(`/follow/${businessId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        Toast.show({ type: "info", text1: "Unfollowed business" });
 
-      setFollowerCounts((prev) => ({
-        ...prev,
-        [businessId]: (prev[businessId] || 1) - 1,
-      }));
-    } else {
-      await API.post(`/follow/${businessId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      Toast.show({ type: "success", text1: "Followed business" });
+        setFollowerCounts((prev) => ({
+          ...prev,
+          [businessId]: (prev[businessId] || 1) - 1,
+        }));
+      } else {
+        await API.post(`/follow/${businessId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        Toast.show({ type: "success", text1: "Followed business" });
 
-      setFollowerCounts((prev) => ({
-        ...prev,
-        [businessId]: (prev[businessId] || 0) + 1,
-      }));
+        setFollowerCounts((prev) => ({
+          ...prev,
+          [businessId]: (prev[businessId] || 0) + 1,
+        }));
+      }
+      setFollowed((prev) => ({ ...prev, [businessId]: !currentlyFollowed }));
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Failed to update follow status" });
     }
-    setFollowed((prev) => ({ ...prev, [businessId]: !currentlyFollowed }));
-  } catch (err) {
-    Toast.show({ type: "error", text1: "Failed to update follow status" });
-  }
-};
+  };
 
   const filteredBusinesses = businesses.filter(
     (b) =>
@@ -237,17 +237,17 @@ const CustomerHome = () => {
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.distance}>{distanceText}</Text>
- <View style={styles.followerRow}>
-  <Ionicons name="people-outline" size={15} color="#374151" />
-  <Text style={styles.followerText}>
-    {followerCounts[item._id] || 0} Followers
-  </Text>
-</View>
+              <View style={styles.followerRow}>
+                <Ionicons name="people-outline" size={15} color="#374151" />
+                <Text style={styles.followerText}>
+                  {followerCounts[item._id] || 0} Followers
+                </Text>
+              </View>
 
             </View>
-            
+
           </TouchableOpacity>
-            
+
           <TouchableOpacity
             style={[
               styles.followBtn,
@@ -256,7 +256,7 @@ const CustomerHome = () => {
             onPress={() => toggleFollow(item._id)}
             activeOpacity={0.8}
           >
-            
+
             <View style={styles.followContent}>
               <Ionicons
                 name={
@@ -277,7 +277,7 @@ const CustomerHome = () => {
               </Text>
             </View>
 
-            
+
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -532,16 +532,16 @@ const styles = StyleSheet.create({
   locationDisabled: { backgroundColor: "#2563EB" },
   locationText: { color: "white", fontWeight: "600", marginLeft: 6, fontSize: 14 },
   followerRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginTop: 6,
-},
-followerText: {
-  marginLeft: 4,
-  fontSize: 13,
-  color: "#374151", // neutral gray (professional)
-  fontWeight: "500",
-},
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  followerText: {
+    marginLeft: 4,
+    fontSize: 13,
+    color: "#374151", // neutral gray (professional)
+    fontWeight: "500",
+  },
 
 
 });
