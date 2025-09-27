@@ -9,7 +9,7 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Image, // Image component added
+  Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -18,7 +18,6 @@ import { useAuthStore } from "../../store/authStore";
 import { useRouter } from "expo-router";
 
 // मान लीजिए कि आपके पास इस पाथ पर एक डिफ़ॉल्ट इमेज है।
-// यदि यह पाथ सही नहीं है, तो आपको इसे अपने प्रोजेक्ट के अनुसार अपडेट करना होगा।
 const DEFAULT_IMAGE_PATH = require("../../assets/images/icon.png");
 
 const CustomerTrendingPage = () => {
@@ -34,17 +33,15 @@ const CustomerTrendingPage = () => {
       const res = await API.get("/trending", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Mock Data to match card structure slightly better if API response is simple
-      const mockData = res.data.map((item, index) => ({
+      
+      // ✅ Mocking हटाया गया, अब सीधे API डेटा का उपयोग होगा
+      // हम केवल isFavorite को मॉक रख रहे हैं क्योंकि यह API से नहीं आ रहा होगा
+      const dataWithMockedFavorites = res.data.map((item, index) => ({
         ...item,
-        // Mocked image, rating, reviewCount for UI consistency
-        rating: item.rating || 4.9, 
-        reviewCount: item.reviewCount || 2356,
         isFavorite: (index % 3 === 0), // Mock favorite state
-        // Assuming your API response has an 'images' array field
       }));
 
-      setTrending(mockData);
+      setTrending(dataWithMockedFavorites);
     } catch (err) {
       console.log("❌ Fetch Trending Error:", err.response?.data || err);
       Toast.show({ type: "error", text1: "Failed to load trending businesses" });
@@ -63,51 +60,64 @@ const CustomerTrendingPage = () => {
     setRefreshing(false);
   }, []);
 
-  const renderProductCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.productCard}
-      activeOpacity={0.85}
-      onPress={() => router.push(`/(customer)/${item.businessId}`)}
-    >
-      {/* Business Image Implementation */}
-      <View style={styles.cardImageContainer}>
-        <Image
-          source={
-            item.images?.length
-              ? { uri: item.images[0] }
-              : DEFAULT_IMAGE_PATH
-          }
-          style={styles.image}
-          resizeMode="cover"
-        />
-      </View>
+  const renderProductCard = ({ item }) => {
+    // API से आने वाले averageRating को 1 दशमलव स्थान तक Format करें
+    const displayRating = item.averageRating
+      ? item.averageRating.toFixed(1)
+      : 'N/A';
       
-      {/* Favorite Icon */}
-      <TouchableOpacity style={styles.favoriteIcon} onPress={() => {}}>
-        <Ionicons name={item.isFavorite ? "heart" : "heart-outline"} size={22} color={item.isFavorite ? "#EF4444" : "#A0A0A0"} />
+    // API से आने वाले reviewCount का उपयोग करें
+    const displayReviewCount = item.reviewCount || 0;
+
+    return (
+      <TouchableOpacity
+        style={styles.productCard}
+        activeOpacity={0.85}
+        onPress={() => router.push(`/(customer)/${item.businessId}`)}
+      >
+        {/* Business Image Implementation */}
+        <View style={styles.cardImageContainer}>
+          <Image
+            source={
+              item.images?.length
+                ? { uri: item.images[0] }
+                : DEFAULT_IMAGE_PATH
+            }
+            style={styles.image}
+            resizeMode="cover"
+          />
+        </View>
+        
+        {/* Favorite Icon */}
+        <TouchableOpacity style={styles.favoriteIcon} onPress={() => {}}>
+          <Ionicons name={item.isFavorite ? "heart" : "heart-outline"} size={22} color={item.isFavorite ? "#EF4444" : "#A0A0A0"} />
+        </TouchableOpacity>
+        
+        {/* Business Info */}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardType}>Trending</Text>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item.name}
+          </Text>
+          
+          {/* ✅ Rating & Review Count Ab Dynamic hain */}
+          <View style={styles.cardRating}>
+            <Ionicons name="star" size={14} color="#F59E0B" />
+            <Text style={styles.cardRatingText}>{displayRating}</Text>
+            <Text style={styles.cardReviewText}>| {displayReviewCount}</Text>
+          </View>
+          
+          <Text style={styles.cardPrice}>
+            {item.location?.city || "City N/A"}
+          </Text>
+          <View style={styles.cardVisitsBadge}>
+              <MaterialCommunityIcons name="account-group-outline" size={12} color="#4F46E5" />
+              <Text style={styles.cardVisitsText}>{item.visitCount} Visitors</Text>
+          </View>
+        </View>
       </TouchableOpacity>
-      
-      {/* Business Info */}
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardType}>Trending</Text>
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <View style={styles.cardRating}>
-          <Ionicons name="star" size={14} color="#F59E0B" />
-          <Text style={styles.cardRatingText}>{item.rating}</Text>
-          <Text style={styles.cardReviewText}>| {item.reviewCount}</Text>
-        </View>
-        <Text style={styles.cardPrice}>
-          {item.location?.city || "City N/A"}
-        </Text>
-        <View style={styles.cardVisitsBadge}>
-            <MaterialCommunityIcons name="account-group-outline" size={12} color="#4F46E5" />
-            <Text style={styles.cardVisitsText}>{item.visitCount} Visitors</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -144,7 +154,6 @@ const CustomerTrendingPage = () => {
             placeholderTextColor="#A0A0A0"
           />
         </View>
-        {/* Removed iconGroup, iconBtn, badge views */}
       </View>
       
       {/* Product List Header */}
@@ -177,7 +186,7 @@ export default CustomerTrendingPage;
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "#F3F4F6", // Light grey background 
+    backgroundColor: "#F3F4F6", 
   },
   center: { 
     flex: 1, 
@@ -218,10 +227,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", 
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start", // Changed to align search to the left
+    justifyContent: "flex-start",
   },
   searchContainer: {
-    flex: 1, // Search bar takes all available space
+    flex: 1, 
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F3F4F6", 
@@ -260,11 +269,11 @@ const styles = StyleSheet.create({
   },
   seeMoreText: {
     fontSize: 14,
-    color: "#38A169", // Changed "See more" color to Green to match the image's "See more"
+    color: "#38A169", 
     fontWeight: "600",
   },
 
-  // --- Product Card (Updated for Image) ---
+  // --- Product Card ---
   listContent: {
     paddingHorizontal: 10,
     paddingBottom: 20,
@@ -290,7 +299,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    overflow: 'hidden', // To ensure image respects border radius
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
@@ -303,7 +312,7 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.7)',
-    zIndex: 10, // Ensure it's above the image
+    zIndex: 10, 
   },
   cardInfo: {
     paddingHorizontal: 10,
