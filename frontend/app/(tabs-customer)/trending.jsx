@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
+  TextInput,
+  Image, // Image component added
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -15,19 +17,34 @@ import API from "../../api/axiosInstance";
 import { useAuthStore } from "../../store/authStore";
 import { useRouter } from "expo-router";
 
+// मान लीजिए कि आपके पास इस पाथ पर एक डिफ़ॉल्ट इमेज है।
+// यदि यह पाथ सही नहीं है, तो आपको इसे अपने प्रोजेक्ट के अनुसार अपडेट करना होगा।
+const DEFAULT_IMAGE_PATH = require("../../assets/images/icon.png");
+
 const CustomerTrendingPage = () => {
   const token = useAuthStore((s) => s.token);
   const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const router  = useRouter();
+  const router = useRouter();
+
   const fetchTrendingBusinesses = async () => {
     try {
       setLoading(true);
       const res = await API.get("/trending", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setTrending(res.data);
+      // Mock Data to match card structure slightly better if API response is simple
+      const mockData = res.data.map((item, index) => ({
+        ...item,
+        // Mocked image, rating, reviewCount for UI consistency
+        rating: item.rating || 4.9, 
+        reviewCount: item.reviewCount || 2356,
+        isFavorite: (index % 3 === 0), // Mock favorite state
+        // Assuming your API response has an 'images' array field
+      }));
+
+      setTrending(mockData);
     } catch (err) {
       console.log("❌ Fetch Trending Error:", err.response?.data || err);
       Toast.show({ type: "error", text1: "Failed to load trending businesses" });
@@ -46,39 +63,47 @@ const CustomerTrendingPage = () => {
     setRefreshing(false);
   }, []);
 
-  const renderItem = ({ item, index }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.85}
+  const renderProductCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.productCard}
+      activeOpacity={0.85}
       onPress={() => router.push(`/(customer)/${item.businessId}`)}
     >
-      {/* Rank */}
-      <View style={styles.rankWrapper}>
-        <Text style={styles.rank}>{index + 1}</Text>
-        <MaterialCommunityIcons
-          name="fire"
-          size={24}
-          color="#F59E0B"
-          style={{ marginLeft: 4 }}
+      {/* Business Image Implementation */}
+      <View style={styles.cardImageContainer}>
+        <Image
+          source={
+            item.images?.length
+              ? { uri: item.images[0] }
+              : DEFAULT_IMAGE_PATH
+          }
+          style={styles.image}
+          resizeMode="cover"
         />
       </View>
-
-      {/* Info */}
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.category}>
-          <Ionicons name="pricetag-outline" size={14} color="#6B7280" /> {item.category}
+      
+      {/* Favorite Icon */}
+      <TouchableOpacity style={styles.favoriteIcon} onPress={() => {}}>
+        <Ionicons name={item.isFavorite ? "heart" : "heart-outline"} size={22} color={item.isFavorite ? "#EF4444" : "#A0A0A0"} />
+      </TouchableOpacity>
+      
+      {/* Business Info */}
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardType}>Trending</Text>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.name}
         </Text>
-        <Text style={styles.location}>
-          <Ionicons name="location-outline" size={14} color="#6B7280" />{" "}
-          {item.location?.address || "N/A"}, {item.location?.city || ""},{" "}
-          {item.location?.state || ""}
+        <View style={styles.cardRating}>
+          <Ionicons name="star" size={14} color="#F59E0B" />
+          <Text style={styles.cardRatingText}>{item.rating}</Text>
+          <Text style={styles.cardReviewText}>| {item.reviewCount}</Text>
+        </View>
+        <Text style={styles.cardPrice}>
+          {item.location?.city || "City N/A"}
         </Text>
-      </View>
-
-      {/* Visitor Badge */}
-      <View style={styles.visitsWrapper}>
-        <View style={styles.visitsBadge}>
-          <MaterialCommunityIcons name="account-group-outline" size={16} color="#fff" />
-          <Text style={styles.visits}>{item.visitCount} Visitors</Text>
+        <View style={styles.cardVisitsBadge}>
+            <MaterialCommunityIcons name="account-group-outline" size={12} color="#4F46E5" />
+            <Text style={styles.cardVisitsText}>{item.visitCount} Visitors</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -107,32 +132,42 @@ const CustomerTrendingPage = () => {
 
   return (
     <View style={styles.container}>
-      {/* Top App Bar */}
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
+      {/* Top Bar with ONLY Search (Icons removed) */}
       <View style={styles.topBar}>
-        <View>
-          <Text style={styles.topBarTitle}>Trending Businesses</Text>
-          <Text style={styles.topBarSubtitle}>Discover the most visited places this week</Text>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#A0A0A0" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search..."
+            placeholderTextColor="#A0A0A0"
+          />
         </View>
-        <View style={styles.topBarIcons}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="search" size={22} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {/* Removed iconGroup, iconBtn, badge views */}
+      </View>
+      
+      {/* Product List Header */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Trending Businesses</Text>
+        <TouchableOpacity>
+          <Text style={styles.seeMoreText}>See more</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
         data={trending}
         keyExtractor={(item) => item.businessId}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        renderItem={renderProductCard}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4F46E5"]} />
         }
       />
 
       <Toast />
-      <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
     </View>
   );
 };
@@ -140,77 +175,185 @@ const CustomerTrendingPage = () => {
 export default CustomerTrendingPage;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 10, color: "#6B7280", fontSize: 16 },
-  noDataText: { marginTop: 12, fontSize: 16, color: "#EF4444", textAlign: "center" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#F3F4F6", // Light grey background 
+  },
+  center: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    backgroundColor: "#fff" 
+  },
+  loadingText: { 
+    marginTop: 10, 
+    color: "#6B7280", 
+    fontSize: 16 
+  },
+  noDataText: { 
+    marginTop: 12, 
+    fontSize: 16, 
+    color: "#EF4444", 
+    textAlign: "center" 
+  },
   retryBtn: {
     marginTop: 14,
-    backgroundColor: "##6D28D9",
+    backgroundColor: "#4F46E5",
     paddingVertical: 10,
     paddingHorizontal: 22,
     borderRadius: 14,
     elevation: 3,
   },
-  retryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  retryText: { 
+    color: "#fff", 
+    fontSize: 16, 
+    fontWeight: "600" 
+  },
 
-  // Top App Bar
+  // --- Top Bar (Search Only) ---
   topBar: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 22,
+    paddingTop: 10, 
     paddingHorizontal: 16,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 16,
+    paddingBottom: 10,
+    backgroundColor: "#fff", 
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start", // Changed to align search to the left
+  },
+  searchContainer: {
+    flex: 1, // Search bar takes all available space
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6", 
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    height: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1F2937",
+    paddingVertical: 0,
+  },
+
+  // --- Section Header ---
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    paddingHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  topBarTitle: { fontSize: 22, fontWeight: "bold", color: "#fff" },
-  topBarSubtitle: { fontSize: 14, color: "#E0E7FF", marginTop: 4 },
-  topBarIcons: { flexDirection: "row" },
-  iconBtn: {
-    marginLeft: 16,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    padding: 8,
-    borderRadius: 12,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1F2937",
+  },
+  seeMoreText: {
+    fontSize: 14,
+    color: "#38A169", // Changed "See more" color to Green to match the image's "See more"
+    fontWeight: "600",
   },
 
-  // Card
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-    marginHorizontal: 16,
-    shadowColor: "#4F46E5",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+  // --- Product Card (Updated for Image) ---
+  listContent: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
   },
-  rankWrapper: { flexDirection: "row", alignItems: "center", width: 40 },
-  rank: { fontSize: 18, fontWeight: "700", color: "#4F46E5" },
-  info: { flex: 1, marginLeft: 14 },
-  name: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  category: { fontSize: 14, color: "#6B7280", marginTop: 4 },
-  location: { fontSize: 13, color: "#374151", marginTop: 2 },
-  visitsWrapper: { alignItems: "center", justifyContent: "center" },
-  visitsBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#4F46E5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  productCard: {
+    flex: 1,
+    marginHorizontal: 6,
+    backgroundColor: "#fff",
     borderRadius: 16,
-    shadowColor: "#4F46E5",
-    shadowOpacity: 0.15,
+    paddingBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 4,
   },
-  visits: { color: "#fff", fontWeight: "600", fontSize: 14, marginLeft: 6 },
+  cardImageContainer: {
+    height: 150,
+    width: '100%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden', // To ensure image respects border radius
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 5,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    zIndex: 10, // Ensure it's above the image
+  },
+  cardInfo: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  cardType: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  cardRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  cardRatingText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: "#1F2937",
+    fontWeight: "600",
+  },
+  cardReviewText: {
+    fontSize: 12,
+    color: "#A0A0A0",
+  },
+  cardPrice: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#38A169", 
+  },
+  cardVisitsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    backgroundColor: "#E0E7FF", 
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  cardVisitsText: { 
+    color: "#4F46E5", 
+    fontSize: 11, 
+    fontWeight: "600", 
+    marginLeft: 4 
+  },
 });
