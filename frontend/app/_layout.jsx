@@ -47,6 +47,7 @@ const RootLayout = () => {
     <SafeAreaProvider>
       <SafeScreen>
         <Stack screenOptions={{ headerShown: false }}>
+           <Stack.Screen name="(landing)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs-customer)" />
           <Stack.Screen name="(tabs-owner)" />

@@ -42,10 +42,10 @@ const AdminBusinessList = () => {
   };
 
   useEffect(() => {
-    
-      fetchBusinesses();
-  
-    
+
+    fetchBusinesses();
+
+
   }, []);
 
   const filteredBusinesses = businesses.filter((b) =>
@@ -78,10 +78,10 @@ const AdminBusinessList = () => {
       </View>
       {/* Verification status for Admin visibility */}
       <View style={styles.statusBadge}>
-        <Ionicons 
-            name={item.isVerified ? "shield-checkmark" : "warning"} 
-            size={20} 
-            color={item.isVerified ? "#10B981" : "#F59E0B"} 
+        <Ionicons
+          name={item.isVerified ? "shield-checkmark" : "warning"}
+          size={20}
+          color={item.isVerified ? "#10B981" : "#F59E0B"}
         />
       </View>
       <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
@@ -131,7 +131,7 @@ const AdminBusinessList = () => {
       />
 
       {/* FAB (Floating Action Button) removed */}
-      
+
     </View>
   );
 };
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   category: { fontSize: 13, color: "#6B7280" },
   ownerText: { fontSize: 13, color: "#9CA3AF", marginTop: 2 }, // New style for owner info
   description: { fontSize: 13, color: "#6B7280", marginTop: 4 },
-  statusBadge: { 
+  statusBadge: {
     marginHorizontal: 8,
   },
 

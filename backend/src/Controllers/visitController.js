@@ -28,6 +28,7 @@ export const createVisit = async (req, res) => {
 };
 
 // 👉 Get trending businesses (last 7 days visits)
+// 👉 Get trending businesses (last 7 days visits)
 export const getTrendingBusinesses = async (req, res) => {
   try {
     const lastWeek = new Date();
@@ -59,6 +60,7 @@ export const getTrendingBusinesses = async (req, res) => {
           name: "$business.name",
           category: "$business.category",
           location: "$business.location",
+          images: "$business.images",   // 👈 images field add kar diya
           visitCount: 1,
         },
       },
@@ -70,3 +72,4 @@ export const getTrendingBusinesses = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
