@@ -11,7 +11,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import API from "../../api/axiosInstance";
 import { LinearGradient } from "expo-linear-gradient";
-import {useRouter} from "expo-router"
+import { useRouter } from "expo-router"
 const AllOffersCarousel = () => {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,67 +34,67 @@ const AllOffersCarousel = () => {
 
   const renderOffer = ({ item }) => {
     return (
-      <TouchableOpacity onPress={()=>{router.push(`/(customer)/${item.business._id}`)}}>
+      <TouchableOpacity onPress={() => { router.push(`/(customer)/${item.business._id}`) }}>
         <View style={styles.card}>
-        <Image
-          source={
-            item.business?.images?.length
-              ? { uri: item.business.images[0] }
-              : require("../../assets/images/icon.png")
-          }
-          style={styles.image}
-        />
-        {/* Ribbon-style discount badge */}
-        <LinearGradient
-          colors={["#DC2626", "#F87171"]}
-          style={styles.discountBadge}
-        >
-          <Text style={styles.discountText}>{item.discountPercent}% OFF</Text>
-        </LinearGradient>
+          <Image
+            source={
+              item.business?.images?.length
+                ? { uri: item.business.images[0] }
+                : require("../../assets/images/icon.png")
+            }
+            style={styles.image}
+          />
+          {/* Ribbon-style discount badge */}
+          <LinearGradient
+            colors={["#DC2626", "#F87171"]}
+            style={styles.discountBadge}
+          >
+            <Text style={styles.discountText}>{item.discountPercent}% OFF</Text>
+          </LinearGradient>
 
-        <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>
-            {item.title}
-          </Text>
-
-          <View style={styles.row}>
-            <MaterialCommunityIcons
-              name="storefront-outline"
-              size={14}
-              color="#374151"
-            />
-            <Text style={styles.business} numberOfLines={1}>
-              {item.business?.name || "Business"}
+          <View style={styles.info}>
+            <Text style={styles.title} numberOfLines={1}>
+              {item.title}
             </Text>
-          </View>
 
-          <View style={styles.row}>
-            <Ionicons name="location-outline" size={14} color="#2563EB" />
-            <Text style={styles.location} numberOfLines={1}>
-              {item.business?.location?.address || "Unknown"}
-            </Text>
-          </View>
-
-          <View style={[styles.row, { justifyContent: "space-between" }]}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="time-outline" size={13} color="#059669" />
-              <Text style={styles.validity}>
-                {new Date(item.validTo).toLocaleDateString()}
+            <View style={styles.row}>
+              <MaterialCommunityIcons
+                name="storefront-outline"
+                size={14}
+                color="#374151"
+              />
+              <Text style={styles.business} numberOfLines={1}>
+                {item.business?.name || "Business"}
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.btn}>
-              <LinearGradient
-                colors={["#2563EB", "#3B82F6"]}
-                style={styles.btnGradient}
-              >
-                <Ionicons name="gift-outline" size={14} color="white" />
-                <Text style={styles.btnText}>Grab</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <View style={styles.row}>
+              <Ionicons name="location-outline" size={14} color="#2563EB" />
+              <Text style={styles.location} numberOfLines={1}>
+                {item.business?.location?.address || "Unknown"}
+              </Text>
+            </View>
+
+            <View style={[styles.row, { justifyContent: "space-between" }]}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="time-outline" size={13} color="#059669" />
+                <Text style={styles.validity}>
+                  {new Date(item.validTo).toLocaleDateString()}
+                </Text>
+              </View>
+
+              <TouchableOpacity style={styles.btn}>
+                <LinearGradient
+                  colors={["#2563EB", "#3B82F6"]}
+                  style={styles.btnGradient}
+                >
+                  <Ionicons name="gift-outline" size={14} color="white" />
+                  <Text style={styles.btnText}>Grab</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
       </TouchableOpacity>
     );
   };
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
     marginRight: 12,
-    marginBottom:4,
+    marginBottom: 4,
     width: 180,
     shadowColor: "#000",
     shadowOpacity: 0.12,
